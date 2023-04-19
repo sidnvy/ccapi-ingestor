@@ -1,0 +1,6 @@
+[requires]
+ccapi/5.45.0@crypto-chassis/stable
+clickhouse-cpp/2.4.0@clickhouse-cpp/stable
+
+[generators]
+cmake
