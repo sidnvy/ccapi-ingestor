@@ -71,25 +71,22 @@ int main() {
   ccapi::SessionConfigs session_configs;
   ccapi::Session session(session_options, session_configs);
 
+  std::vector<Subscription> subscriptionList;
   ccapi::Subscription subscription;
   std::vector<std::string> exchanges = {"binance-usds-futures"};
   std::vector<std::string> symbols = {"ethusdt", "btcusdt", "bnbusdt"};
-  for (const auto& exchange : exchanges) {
-    for (const auto& symbol : symbols) {
+  for (const auto &exchange : exchanges) {
+    for (const auto &symbol : symbols) {
       std::string correlation_id = exchange + "," + symbol;
-      subscription = ccapi::Subscription(exchange, symbol, "MARKET_DEPTH", "MARKET_DEPTH_MAX=1", correlation_id);
-      session.subscribe(subscription, [&](const ccapi::Event& event) {
-        try {
-          processEvents({event}, client);
-        } catch (const std::exception& e) {
-          std::cerr << "Error processing events: " << e.what() << std::endl;
-        }
-      });
+      subscriptionList.emplace_back(exchange, symbol, "MARKET_DEPTH",
+                                    "MARKET_DEPTH_MAX=1", correlation_id);
     }
   }
+  session.subscribe(subscriptionList);
 
   // Connect to ClickHouse and create the table schema
-  clickhouse::ClientOptions client_options("localhost:9000", "default", "default", "default");
+  clickhouse::ClientOptions client_options("localhost:9000", "default",
+                                           "default", "default");
   clickhouse::Client client(client_options);
 
   std::string table_schema = R"(
@@ -111,6 +108,14 @@ int main() {
 
   // Run the session
   session.start();
+  while (true) {
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::vector<Event> eventList = session.getEventQueue().purge();
+    for (const auto &event : eventList) {
+      processEvents(const int &events, int &client)
+    }
+  }
+  session.stop();
 
   // Wait for the user to press Enter to stop the session
   std::cout << "Press Enter to stop the session..." << std::endl;
@@ -121,4 +126,3 @@ int main() {
 
   return 0;
 }
-
